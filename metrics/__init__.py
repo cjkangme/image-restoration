@@ -25,23 +25,24 @@ def masked_ssim_score(true, pred, mask):
         true = true.reshape(true.shape[:-1])
         pred = pred.reshape(pred.shape[:-1])
         mask = mask.reshape(mask.shape[:-1])
-        channel_axis = None
+        multichannel = False
     else:
-        channel_axis = -1
+        multichannel = True
     # 손실 영역의 좌표에서만 RGB 채널별 픽셀 값 추출
-    mask = (mask > 0).astype(np.float32)
-
-    true_masked = true * mask
-    pred_masked = pred * mask
+    mask = (mask > 0)
 
     # 손실 영역 픽셀만으로 SSIM 계산 (채널축 사용)
-    ssim_value = ssim(
-        true_masked,
-        pred_masked,
-        channel_axis=channel_axis,
-        data_range=pred_masked.max() - pred_masked.min(),
+    _, ssim_map = ssim(
+        true,
+        pred,
+        multichannel=multichannel,
+        data_range=pred.max() - pred.min(),
+        full=True
     )
-    return ssim_value
+
+    masked_ssim = np.mean(ssim_map[mask])
+    
+    return masked_ssim
 
 
 def histogram_similarity(true, pred):
