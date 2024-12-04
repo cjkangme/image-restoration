@@ -19,7 +19,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libxext6 \
     libxrender1 \
     python-is-python3 \
-    python3.12-dev \
+    python3.10-dev \
     python3-pip \
     wget \
     && rm -rf /var/lib/apt/lists/*
@@ -31,8 +31,7 @@ RUN pip install -r /tmp/requirements.txt
 
 # Change user to non-root user
 RUN adduser --disabled-password --gecos "" ${USER_NAME}
-RUN git clone https://github.com/cjkangme/image-restoration.git
-COPY data /home/${USER_NAME}/image-restoration/data
 RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}
+COPY . /home/${USER_NAME}/image-restoration
 USER ${USER_NAME}
-WORKDIR /home/${USER_NAME}/mesh-texturing
+WORKDIR /home/${USER_NAME}/image-restoration

@@ -33,6 +33,12 @@ class TrainDataset(Dataset):
         assert (
             newW > 0 and newH > 0
         ), "Scale is too small, resized images would have no pixel"
+
+        if is_mask:
+            pil_img = pil_img.resize((newW, newH), Image.NEAREST)
+        else:
+            pil_img = pil_img.resize((newW, newH), Image.BILINEAR)
+
         img = np.asarray(pil_img)
         if is_mask:
             mask = np.zeros((newH, newW), dtype=np.int64)
@@ -70,8 +76,8 @@ class TrainDataset(Dataset):
         image = Image.open(image_path[0])
         mask = Image.open(mask_path[0])
 
-        image = self.preprocess(self.mask_values, image, 512, is_mask=False)
-        mask = self.preprocess(self.mask_values, mask, 512, is_mask=True)
+        image = self.preprocess(self.mask_values, image, 256, is_mask=False)
+        mask = self.preprocess(self.mask_values, mask, 256, is_mask=True)
 
         image = torch.as_tensor(image.copy()).float().contiguous()
         mask = torch.as_tensor(mask.copy()).long().contiguous()

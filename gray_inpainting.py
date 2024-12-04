@@ -12,12 +12,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_path", type=str, default="data/train_gray")
     parser.add_argument("--mask_path", type=str, default="data/train_mask")
+    parser.add_argument("--batch_size", type=int, default=16)
 
     args = parser.parse_args()
 
     # FIXME: gray 이미지 아닐경우 input_channels 4로 수정
-    G = CoModGANGenerator(resolution=512, input_channels=1)
-    D = CoModGANDiscriminator(resolution=512, input_channels=1)
+    G = CoModGANGenerator(resolution=256, input_channels=1)
+    D = CoModGANDiscriminator(resolution=256, input_channels=1)
     G_loss = GeneratorLoss()
     D_loss = DiscriminatorLoss()
     input_dir = args.input_path
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     dataset = TrainDataset(input_dir, mask_dir)
     data_loader = DataLoader(
         dataset,
-        batch_size=1,
+        batch_size=args.batch_size,
         shuffle=True,
     )
     total_kimg = len(dataset)  # 30k images

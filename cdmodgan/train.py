@@ -26,7 +26,7 @@ class TrainingSchedule:
         D_lrate_dict={},
         lrate_rampup_kimg=0,
     ):
-        resolution_log2 = 512**0.5
+        resolution_log2 = 256**0.5
         self.kimg = cur_nimg / 1000.0
 
         # Level-of-detail and resolution
@@ -73,15 +73,15 @@ class Trainer:
         device,
         total_kimg=25000,
         mirror_augment=False,
-        image_snapshot_ticks=50,
-        network_snapshot_ticks=50,
+        image_snapshot_ticks=10,
+        network_snapshot_ticks=20,
         resume_pkl=None,
         G_smoothing_kimg=10.0,
         minibatch_repeats=4,
         G_reg_interval=4,
         D_reg_interval=16,
     ):
-        self.G = G.to(device)
+        self.G = G.to(device=device)
         self.D = D.to(device)
         self.G_ema = deepcopy(G).to(device)
         self.G_ema.load_state_dict(G.state_dict())
@@ -164,9 +164,8 @@ class Trainer:
 
     def train(self):
         cur_nimg = 0
-        epoch = 0
-        tick_start_nimg = cur_nimg
-
+        epoch = 1
+        pbar = tqdm(total=1000)
         while cur_nimg < self.total_kimg * 1000:
             # Initialize epoch
             batch_idx = 0
@@ -175,9 +174,7 @@ class Trainer:
             sched = TrainingSchedule(cur_nimg=cur_nimg, training_set=self.dataset)
 
             # Training loop
-            for batch_idx, batch in tqdm(
-                enumerate(self.data_loader), total=len(self.data_loader)
-            ):
+            for batch_idx, batch in tqdm(enumerate(self.data_loader), total=len(self.data_loader)):
                 # Process batch
                 reals, masks = self.process_batch(batch, self.mirror_augment)
                 batch_size = reals.size(0)
@@ -210,9 +207,7 @@ class Trainer:
 
                 # Perform maintenance tasks once per tick
                 done = cur_nimg >= self.total_kimg * 1000
-                if cur_nimg >= tick_start_nimg * 1000 or done:
-                    epoch += 1
-
+                if cur_nimg >= epoch * self.total_kimg or done:
                     for name, value in self.running_stats.items():
                         avg_value = value / batch_size
                         wandb.log({f"Loss/{name}": avg_value})
@@ -228,10 +223,10 @@ class Trainer:
                         epoch % self.image_snapshot_ticks == 0 or done
                     ):
                         with torch.no_grad():
-                            sample_z = torch.randn(16, self.G.latent_dim).to(
+                            sample_z = torch.randn(batch_size, self.G.latent_dim).to(
                                 self.device
                             )
-                            samples = self.G_ema(sample_z, reals[:16], masks[:16])
+                            samples = self.G_ema(sample_z, reals[:batch_size], masks[:batch_size])
                             grid = make_grid(samples, normalize=True)
                             wandb.log({"Images": [wandb.Image(grid)]})
 
@@ -243,10 +238,12 @@ class Trainer:
                         )
 
                     # Reset tick
-                    tick_start_nimg = cur_nimg
+                    epoch += 1
                     self.running_stats.clear()
+            pbar.update()
 
         # Save final snapshot
+        pbar.close()
         self.save_snapshot("network-final.pt")
 
 

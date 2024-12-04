@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from skimage.metrics import structural_similarity as ssim
 
 # 채널 축 설정 (grayscale 이미지의 경우 None, RGB 이미지의 경우 -1)
@@ -20,24 +21,25 @@ def ssim_score(true, pred):
 
 
 def masked_ssim_score(true, pred, mask):
-    if len(mask.shape) == 3:
-        mask = mask.reshape(mask.shape[:-1])
     if true.shape[-1] == 1:
         true = true.reshape(true.shape[:-1])
         pred = pred.reshape(pred.shape[:-1])
+        mask = mask.reshape(mask.shape[:-1])
         channel_axis = None
     else:
         channel_axis = -1
     # 손실 영역의 좌표에서만 RGB 채널별 픽셀 값 추출
-    true_masked_pixels = true[mask > 0]
-    pred_masked_pixels = pred[mask > 0]
+    mask = (mask > 0).astype(np.float32)
+
+    true_masked = true * mask
+    pred_masked = pred * mask
 
     # 손실 영역 픽셀만으로 SSIM 계산 (채널축 사용)
     ssim_value = ssim(
-        true_masked_pixels,
-        pred_masked_pixels,
+        true_masked,
+        pred_masked,
         channel_axis=channel_axis,
-        data_range=pred.max() - pred.min(),
+        data_range=pred_masked.max() - pred_masked.min(),
     )
     return ssim_value
 

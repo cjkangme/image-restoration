@@ -1,5 +1,5 @@
 services:
-  node:
+  app:
     build:
       context: .
       dockerfile: ./docker/Dockerfile

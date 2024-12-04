@@ -20,6 +20,7 @@ class EqualizedLinear(nn.Module):
         self.bias = nn.Parameter(torch.zeros(out_features))
         self.out_features = out_features
 
+    @torch.amp.autocast("cuda")
     def forward(self, x):
         return F.linear(x, self.weight * self.w_mul, self.bias)
 
@@ -53,6 +54,7 @@ class EqualizedConv2d(nn.Module):
         )
         self.bias = nn.Parameter(torch.zeros(out_channels))
 
+    @torch.amp.autocast("cuda")
     def forward(self, x):
         return F.conv2d(
             x,
@@ -90,6 +92,7 @@ class ModulatedConv2d(nn.Module):
         self.mod_weight = EqualizedLinear(style_dim, in_channels)
         self.mod_bias = nn.Parameter(torch.zeros(in_channels))
 
+    @torch.amp.autocast("cuda")
     def forward(self, x, y):
         # x: [batch, in_channels, height, width]
         # y: [batch, in_channels]
@@ -134,6 +137,7 @@ class NoiseLayer(nn.Module):
         self.weight = nn.Parameter(torch.zeros(1))
         self.noise_type = "random"
 
+    @torch.amp.autocast("cuda")
     def forward(self, x, noise=None):
         if noise is None and self.noise_type == "random":
             noise = torch.randn(x.size(0), 1, x.size(2), x.size(3), device=x.device)
@@ -143,7 +147,7 @@ class NoiseLayer(nn.Module):
 class CoModGANGenerator(nn.Module):
     def __init__(
         self,
-        resolution=512,
+        resolution=256,
         latent_size=512,
         style_dim=512,
         n_mlp=8,
@@ -252,6 +256,7 @@ class CoModGANGenerator(nn.Module):
             self.channels[log2_res], self.input_channels, 1, style_dim=style_dim
         )
 
+    @torch.amp.autocast("cuda")
     def forward(self, latent, image, mask):
         assert (
             image.size(1) == self.input_channels
@@ -340,6 +345,7 @@ class CoModGANDiscriminator(nn.Module):
             EqualizedLinear(16 * self.channels[2], 1),
         )
 
+    @torch.amp.autocast("cuda")
     def forward(self, image, mask):
         x = torch.cat([mask - 0.5, image], dim=1)
         x = self.from_rgb(x)
