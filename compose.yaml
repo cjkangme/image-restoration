@@ -10,3 +10,4 @@ services:
             - driver: nvidia
               device_ids: ["3"]
               capabilities: [gpu]
+    command: sh -c "python gray_inpainting.py"

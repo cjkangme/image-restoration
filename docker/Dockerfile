@@ -33,5 +33,7 @@ RUN pip install -r /tmp/requirements.txt
 RUN adduser --disabled-password --gecos "" ${USER_NAME}
 RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}
 COPY . /home/${USER_NAME}/image-restoration
+RUN mkdir /home/${USER_NAME}/checkpoints
+RUN chown -R ${USER_NAME}:${USER_NAME} /home/${USER_NAME}/checkpoints
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}/image-restoration

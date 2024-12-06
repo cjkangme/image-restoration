@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.optim as optim
 import numpy as np
@@ -73,8 +74,8 @@ class Trainer:
         device,
         total_kimg=25000,
         mirror_augment=False,
-        image_snapshot_ticks=10,
-        network_snapshot_ticks=20,
+        image_snapshot_ticks=5,
+        network_snapshot_ticks=10,
         resume_pkl=None,
         G_smoothing_kimg=10.0,
         minibatch_repeats=4,
@@ -227,14 +228,16 @@ class Trainer:
                                 self.device
                             )
                             samples = self.G_ema(sample_z, reals[:batch_size], masks[:batch_size])
+                            true_grid = make_grid(reals[:batch_size], normalize=True)
                             grid = make_grid(samples, normalize=True)
-                            wandb.log({"Images": [wandb.Image(grid)]})
+                            wandb.log({"True Images": [wandb.Image(true_grid)]})
+                            wandb.log({"Pred Images": [wandb.Image(grid)]})
 
                     if self.network_snapshot_ticks is not None and (
                         epoch % self.network_snapshot_ticks == 0 or done
                     ):
                         self.save_snapshot(
-                            f"network-snapshot-{cur_nimg // 1000:06d}.pt"
+                            os.path.join("/", "home", "cv", "checkpoints", f"network-snapshot-{cur_nimg // 1000:06d}.pt")
                         )
 
                     # Reset tick
