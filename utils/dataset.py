@@ -22,7 +22,7 @@ class TrainDataset(Dataset):
                     make sure you put your images there"
             )
 
-        self.mask_values = [0, 255]
+        self.mask_values = [255, 0]
 
     def __len__(self):
         return len(self.ids)
